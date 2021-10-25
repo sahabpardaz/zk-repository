@@ -1,16 +1,19 @@
 package ir.sahab.zkrepository;
 
-import static ir.sahab.zkrepository.TestUtils.assertThrows;
-import static ir.sahab.zkrepository.TestUtils.repeatUntilAssertionsSuccess;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import ir.sahab.uncaughtexceptionrule.UncaughtExceptionRule;
+import ir.sahab.zk.client.RunnableWithException;
 import ir.sahab.zookeeperrule.ZooKeeperRule;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -36,7 +39,7 @@ public class ZkRepositoryTest {
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() {
         try {
             if (testZkRepository != null) {
                 for (Integer id : testZkRepository.getSnapshot().keySet()) {
@@ -122,11 +125,12 @@ public class ZkRepositoryTest {
         testZkRepository.add(testEntity);
 
         // The repository callback should be called once and repository caches must be updated.
-        repeatUntilAssertionsSuccess(() -> {
+        Awaitility.await().atMost(Durations.ONE_SECOND).until(() -> {
             assertEquals(1, numTestEntityCallbacksCalled.get());
             assertEquals(testEntity, testEntityCache.get(1));
             assertEquals(1, testEntityCache.size());
-        }, 1000);
+            return true;
+        });
 
         // Update data.
         TestEntity updatedTestEntity = new TestEntity.Builder().setId(1).setName("TestEntityUpdated").build();
@@ -134,20 +138,43 @@ public class ZkRepositoryTest {
         testZkRepository.update(updatedTestEntity);
 
         // The repository callback should be called 2 times till now and repository caches must be updated.
-        repeatUntilAssertionsSuccess(() -> {
+        Awaitility.await().atMost(Durations.ONE_SECOND).until(() -> {
             assertEquals(2, numTestEntityCallbacksCalled.get());
             assertEquals(updatedTestEntity, testEntityCache.get(1));
             assertEquals(1, testEntityCache.size());
-        }, 1000);
+            return true;
+        });
 
         // Delete data.
         testZkRepository.remove(1);
 
         // The repository callback should be called 3 times till now and repository caches must be updated.
-        repeatUntilAssertionsSuccess(() -> {
+        Awaitility.await().atMost(Durations.ONE_SECOND).until(() -> {
             assertEquals(3, numTestEntityCallbacksCalled.get());
             assertNull(testEntityCache.get(1));
             assertEquals(0, testEntityCache.size());
-        }, 1000);
+            return true;
+        });
+    }
+
+
+    /**
+     * Runs the runnable and expects an exception of the specified type.
+     *
+     * @param expected Type of exception that is expected to be thrown by the runnable.
+     * @param runnable Runnable to be executed.
+     */
+    public static <T extends Throwable> void assertThrows(Class<T> expected,
+            RunnableWithException<Throwable> runnable) {
+        try {
+            runnable.run();
+        } catch (Throwable throwable) {
+            StringWriter stacktrace = new StringWriter();
+            PrintWriter printWriter = new PrintWriter(stacktrace);
+            throwable.printStackTrace(printWriter);
+            assertEquals(stacktrace.toString(), expected, throwable.getClass());
+            return;
+        }
+        fail(String.format("Expected %s but no exception was thrown", expected));
     }
 }
