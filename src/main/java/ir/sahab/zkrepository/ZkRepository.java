@@ -167,15 +167,13 @@ public abstract class ZkRepository<T extends ZkRepositoryItem<T>> implements Clo
         }
     }
 
-    public void start() throws ZkClientException {
-        try {
-            zkClient.start(zkAddresses, ZK_CONNECTION_TIMEOUT_MILLIS, ZK_SESSION_TIMEOUT_MILLIS,
-                    ZK_NUM_RETRIES_FOR_FAILED_OPS, ZK_SLEEP_BETWEEN_RETRIES_MILLIS);
-            Preconditions.checkState(zkClient.exists(getZkRootPath()),
-                    "Root paths does not exist in zookeeper tree: " + getZkRootPath());
-        } catch (Exception ex) {
-            throw new ZkClientException("Error in start connecting to zookeeper instance", ex);
-        }
+    public void start() throws ZkClientException, InterruptedException {
+        zkClient.start(zkAddresses, ZK_CONNECTION_TIMEOUT_MILLIS, ZK_SESSION_TIMEOUT_MILLIS,
+                ZK_NUM_RETRIES_FOR_FAILED_OPS, ZK_SLEEP_BETWEEN_RETRIES_MILLIS);
+
+        Preconditions.checkState(zkClient.exists(getZkRootPath()),
+                "Root paths does not exist in zookeeper tree: " + getZkRootPath());
+
         initCache();
     }
 
@@ -223,7 +221,7 @@ public abstract class ZkRepository<T extends ZkRepositoryItem<T>> implements Clo
             zkClient.setData(joinPaths(getZkRootPath(), "" + item.getId()), item.serialize());
         } catch (ZkClientException e) {
             if (e.getZkErrorCode() == Code.NONODE) {
-                throw new NodeNotFoundException("No item with ID: " + item.getId() + " found to update.", e);
+                throw new NodeNotFoundException("Item with ID: " + item.getId() + " not found for update.", e);
             }
             throw new IOException("Error occurred during updating ZK item: " + item, e);
         }
@@ -342,9 +340,7 @@ public abstract class ZkRepository<T extends ZkRepositoryItem<T>> implements Clo
             if (sp.endsWith("/")) {
                 sp = sp.substring(0, sp.length() - 1);
             }
-            if (i == 0 && sp.isEmpty()) {
-                continue;
-            } else {
+            if (i != 0 || !sp.isEmpty()) {
                 pathList.add(sp);
             }
         }

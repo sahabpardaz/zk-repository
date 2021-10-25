@@ -16,7 +16,7 @@
         <sonar.organization>sahabpardaz</sonar.organization>
         <sonar.projectKey>sahabpardaz_zk-repository</sonar.projectKey>
 
-        <jackson.version>2.9.4</jackson.version>
+        <jackson.version>2.13.0</jackson.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
@@ -60,6 +60,12 @@
             <groupId>com.github.sahabpardaz</groupId>
             <artifactId>uncaught-exception-rule</artifactId>
             <version>1.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.1.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
