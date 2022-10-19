@@ -16,7 +16,7 @@
         <sonar.organization>sahabpardaz</sonar.organization>
         <sonar.projectKey>sahabpardaz_zk-repository</sonar.projectKey>
 
-        <jackson.version>2.13.0</jackson.version>
+        <jackson.version>2.13.4.1</jackson.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
